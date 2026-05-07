@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { getModuleById } from '../data/modules';
 import { useProgress } from '../hooks/useProgress';
@@ -8,7 +8,6 @@ type Tab = 'learn' | 'quiz';
 
 export default function ModuleDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const mod = getModuleById(id!);
   const { progress, completeModule, saveQuizScore } = useProgress();
 
@@ -41,7 +40,7 @@ export default function ModuleDetail() {
       return;
     }
     setQuizSubmitted(true);
-    const correct = mod.quiz.filter((q, i) => quizAnswers[q.id] === q.correctIndex).length;
+    const correct = mod.quiz.filter((q) => quizAnswers[q.id] === q.correctIndex).length;
     const score = Math.round((correct / mod.quiz.length) * 100);
     saveQuizScore(mod.id, score);
     if (score >= 70) completeModule(mod.id);
