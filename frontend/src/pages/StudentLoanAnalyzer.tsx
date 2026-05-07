@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { useProgress } from '../hooks/useProgress';
 
 interface LoanPlan {
@@ -40,7 +40,7 @@ export default function StudentLoanAnalyzer() {
     recordToolUse('loan-analyzer');
 
     try {
-      const { data } = await axios.post<LoanResult>('/api/ai/loans', {
+      const { data } = await api.post<LoanResult>('/api/ai/loans', {
         balance: parseFloat(balance),
         interestRate: parseFloat(rate),
         income: parseFloat(income),

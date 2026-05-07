@@ -44,7 +44,8 @@ export default function AIAdvisor() {
     setStreamingText('');
 
     try {
-      const response = await fetch('/api/ai/advisor', {
+      const base = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${base}/api/ai/advisor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

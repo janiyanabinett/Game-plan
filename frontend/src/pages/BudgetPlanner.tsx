@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { useProgress } from '../hooks/useProgress';
 
 const EXPENSE_CATEGORIES = [
@@ -38,7 +38,7 @@ export default function BudgetPlanner() {
     recordToolUse('budget-planner');
 
     try {
-      const { data } = await axios.post<BudgetResult>('/api/ai/budget', {
+      const { data } = await api.post<BudgetResult>('/api/ai/budget', {
         income: parseFloat(income),
         expenses: Object.fromEntries(
           Object.entries(expenses)

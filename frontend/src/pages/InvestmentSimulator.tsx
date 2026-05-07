@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useProgress } from '../hooks/useProgress';
 
@@ -47,7 +47,7 @@ export default function InvestmentSimulator() {
     recordToolUse('investment-simulator');
 
     try {
-      const { data } = await axios.post<InvestmentResult>('/api/ai/investment', {
+      const { data } = await api.post<InvestmentResult>('/api/ai/investment', {
         amount: parseFloat(amount),
         riskTolerance: risk,
         timeHorizon: parseInt(horizon),

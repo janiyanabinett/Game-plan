@@ -6,7 +6,8 @@ import aiRoutes from './routes/ai.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+// Allow any origin in production (set ALLOWED_ORIGIN env var to lock it down)
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 
 app.use('/api/ai', aiRoutes);

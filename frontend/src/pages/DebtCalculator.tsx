@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { useProgress } from '../hooks/useProgress';
 import { DebtItem } from '../types';
 
@@ -53,7 +53,7 @@ export default function DebtCalculator() {
     recordToolUse('debt-calculator');
 
     try {
-      const { data } = await axios.post<DebtResult>('/api/ai/debt', {
+      const { data } = await api.post<DebtResult>('/api/ai/debt', {
         debts: validDebts,
         extraPayment: parseFloat(extraPayment) || 0,
       });

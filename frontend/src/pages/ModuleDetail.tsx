@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { getModuleById } from '../data/modules';
 import { useProgress } from '../hooks/useProgress';
 
@@ -53,7 +53,7 @@ export default function ModuleDetail() {
     if (!q) return;
     setLoadingExplanation(questionId);
     try {
-      const { data } = await axios.post('/api/ai/quiz-explain', {
+      const { data } = await api.post('/api/ai/quiz-explain', {
         question: q.question,
         correctAnswer: q.options[q.correctIndex],
         userAnswer: q.options[quizAnswers[q.id]],
