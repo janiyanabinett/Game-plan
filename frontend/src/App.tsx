@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import LeadCenter from './pages/LeadCenter';
 import Modules from './pages/Modules';
 import ModuleDetail from './pages/ModuleDetail';
 import AIAdvisor from './pages/AIAdvisor';
@@ -15,6 +16,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="leads" element={<LeadCenter />} />
           <Route path="modules" element={<Modules />} />
           <Route path="modules/:id" element={<ModuleDetail />} />
           <Route path="ai-advisor" element={<AIAdvisor />} />
