@@ -1,6 +1,6 @@
 {
-  "name": "finlit-ai-backend",
-  "version": "1.0.0",
+  "name": "propai-command-center-backend",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --watch server.js",

@@ -1,123 +1,215 @@
 import { Router } from 'express';
-import { FinAdvisorAgent }         from '../agents/FinAdvisorAgent.js';
-import { BudgetAnalyzerAgent }     from '../agents/BudgetAnalyzerAgent.js';
-import { InvestmentSimulatorAgent } from '../agents/InvestmentSimulatorAgent.js';
-import { DebtOptimizerAgent }      from '../agents/DebtOptimizerAgent.js';
-import { LoanAnalyzerAgent }       from '../agents/LoanAnalyzerAgent.js';
+import { AgentOrchestrator } from '../agents/AgentOrchestrator.js';
+import { PropertySearchAgent } from '../agents/PropertySearchAgent.js';
+import { MediaCreationAgent }  from '../agents/MediaCreationAgent.js';
+import { ThreeDMediaAgent }    from '../agents/ThreeDMediaAgent.js';
+import { LetterWritingAgent }  from '../agents/LetterWritingAgent.js';
+import { AutoResponseAgent }   from '../agents/AutoResponseAgent.js';
+import { MarketingAgent }      from '../agents/MarketingAgent.js';
 
 const router = Router();
 
-// Instantiate agents once (stateless — safe to reuse)
-const finAdvisor      = new FinAdvisorAgent();
-const budgetAnalyzer  = new BudgetAnalyzerAgent();
-const investSim       = new InvestmentSimulatorAgent();
-const debtOptimizer   = new DebtOptimizerAgent();
-const loanAnalyzer    = new LoanAnalyzerAgent();
+// Single orchestrator instance (stateful session)
+const orchestrator = new AgentOrchestrator();
+const propertySearch = new PropertySearchAgent();
+const mediaAgent     = new MediaCreationAgent();
+const threeDAgent    = new ThreeDMediaAgent();
+const letterAgent    = new LetterWritingAgent();
+const autoResponse   = new AutoResponseAgent();
+const marketingAgent = new MarketingAgent();
 
-// ── POST /api/ai/advisor — streaming financial advice chat ────────────────
-router.post('/advisor', (req, res) => {
-  const { messages } = req.body;
-  if (!messages?.length) return res.status(400).json({ error: 'messages required' });
-
-  // Last user message
-  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-  if (!lastUser) return res.status(400).json({ error: 'no user message found' });
-
-  // History context (exclude last message)
-  const history = messages.slice(0, -1);
-
-  const response = finAdvisor.respond(lastUser.content, history);
-
-  // Stream response word-by-word for natural feel
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  const words = response.split(' ');
-  let idx = 0;
-  const CHUNK_SIZE = 3; // words per chunk
-  const DELAY_MS   = 28;
-
-  const send = () => {
-    if (idx >= words.length) {
-      res.write('data: [DONE]\n\n');
-      res.end();
-      return;
-    }
-    const chunk = words.slice(idx, idx + CHUNK_SIZE).join(' ') + ' ';
-    res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
-    idx += CHUNK_SIZE;
-    setTimeout(send, DELAY_MS);
-  };
-
-  send();
-});
-
-// ── POST /api/ai/budget ───────────────────────────────────────────────────
-router.post('/budget', (req, res) => {
-  const { income, expenses, goals } = req.body;
-  if (!income || income <= 0) return res.status(400).json({ error: 'income required' });
-
+// ── POST /api/ai/qualify-lead ─────────────────────────────────────────────
+router.post('/qualify-lead', (req, res) => {
+  const { name, email, phone, message, source, timeframe } = req.body;
+  if (!email && !phone) return res.status(400).json({ error: 'email or phone required' });
   try {
-    const result = budgetAnalyzer.analyze({ income, expenses: expenses || {}, goals });
+    const result = orchestrator.qualifyLead({ name, email, phone, message, source, timeframe });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST /api/ai/investment ───────────────────────────────────────────────
-router.post('/investment', (req, res) => {
-  const { amount, riskTolerance, timeHorizon, goals } = req.body;
-  if (!amount || amount <= 0) return res.status(400).json({ error: 'amount required' });
-
+// ── POST /api/ai/inquiry ──────────────────────────────────────────────────
+router.post('/inquiry', (req, res) => {
+  const inquiry = req.body;
+  if (!inquiry.message) return res.status(400).json({ error: 'message required' });
   try {
-    const result = investSim.simulate({ amount, riskTolerance, timeHorizon, goals });
+    const result = orchestrator.handleInquiry(inquiry);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST /api/ai/debt ─────────────────────────────────────────────────────
-router.post('/debt', (req, res) => {
-  const { debts, extraPayment } = req.body;
-  if (!debts?.length) return res.status(400).json({ error: 'debts required' });
-
+// ── POST /api/ai/listing-content ──────────────────────────────────────────
+router.post('/listing-content', (req, res) => {
+  const { property, types } = req.body;
+  if (!property) return res.status(400).json({ error: 'property required' });
   try {
-    const result = debtOptimizer.optimize({ debts, extraPayment });
+    const result = orchestrator.generateListingContent(property, types);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST /api/ai/loans ────────────────────────────────────────────────────
-router.post('/loans', (req, res) => {
-  const { balance, interestRate, income, familySize, loanType } = req.body;
-  if (!balance || !interestRate || !income) {
-    return res.status(400).json({ error: 'balance, interestRate, and income are required' });
-  }
-
+// ── GET/POST /api/ai/property-search ─────────────────────────────────────
+router.get('/property-search', (req, res) => {
   try {
-    const result = loanAnalyzer.analyze({ balance, interestRate, income, familySize, loanType });
+    const criteria = { ...req.query };
+    if (criteria.minPrice) criteria.minPrice = Number(criteria.minPrice);
+    if (criteria.maxPrice) criteria.maxPrice = Number(criteria.maxPrice);
+    if (criteria.minBeds) criteria.minBeds = Number(criteria.minBeds);
+    if (criteria.minBaths) criteria.minBaths = Number(criteria.minBaths);
+    if (criteria.minSqft) criteria.minSqft = Number(criteria.minSqft);
+    if (criteria.pool === 'true') criteria.pool = true;
+    if (criteria.page) criteria.page = Number(criteria.page);
+    const result = propertySearch.search(criteria);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST /api/ai/quiz-explain ─────────────────────────────────────────────
-router.post('/quiz-explain', (req, res) => {
-  const { question, correctAnswer, userAnswer, topic } = req.body;
-  const isCorrect = correctAnswer === userAnswer;
+router.post('/property-search', (req, res) => {
+  try {
+    const result = propertySearch.search(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  // Generate explanation from the question's built-in context
-  const explanation = isCorrect
-    ? `Correct! ${correctAnswer} is right. This is a key concept in ${topic}: understanding this principle helps you make better financial decisions in real life.`
-    : `The correct answer is "${correctAnswer}." You chose "${userAnswer}." In ${topic}, this distinction matters because it directly affects your financial outcomes. Review the lesson on this topic to reinforce the concept.`;
+// ── GET /api/ai/property/:id ──────────────────────────────────────────────
+router.get('/property/:id', (req, res) => {
+  const property = propertySearch.getById(req.params.id);
+  if (!property) return res.status(404).json({ error: 'Property not found' });
+  res.json(property);
+});
 
-  res.json({ explanation });
+// ── POST /api/ai/property-match ───────────────────────────────────────────
+router.post('/property-match', (req, res) => {
+  const { profile } = req.body;
+  if (!profile) return res.status(400).json({ error: 'profile required' });
+  try {
+    const result = propertySearch.matchToProfile(profile);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/ai/market-stats ──────────────────────────────────────────────
+router.get('/market-stats', (req, res) => {
+  const { city = 'Scottsdale' } = req.query;
+  try {
+    const stats = propertySearch.marketStats(city);
+    const report = marketingAgent.generateMarketReport(stats);
+    res.json({ stats, report });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/ai/media ────────────────────────────────────────────────────
+router.post('/media', (req, res) => {
+  const { type, property, options } = req.body;
+  if (!property) return res.status(400).json({ error: 'property required' });
+  try {
+    const result = mediaAgent.generate(type || 'all', property, options || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/ai/3d-media ─────────────────────────────────────────────────
+router.post('/3d-media', (req, res) => {
+  const { action, data } = req.body;
+  if (!action) return res.status(400).json({ error: 'action required' });
+  try {
+    const result = threeDAgent.process(action, data || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/ai/letter ───────────────────────────────────────────────────
+router.post('/letter', (req, res) => {
+  const { type, vars } = req.body;
+  if (!type) return res.status(400).json({ error: 'type required' });
+  try {
+    const result = letterAgent.generate(type, vars || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/ai/auto-respond ─────────────────────────────────────────────
+router.post('/auto-respond', (req, res) => {
+  const inquiry = req.body;
+  if (!inquiry.message) return res.status(400).json({ error: 'message required' });
+  try {
+    const result = autoResponse.respond(inquiry);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/ai/campaign ─────────────────────────────────────────────────
+router.post('/campaign', (req, res) => {
+  const { listing, objective, budget, agentName } = req.body;
+  if (!listing) return res.status(400).json({ error: 'listing required' });
+  try {
+    const result = orchestrator.buildCampaign(listing, { objective, budget, agentName });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/ai/sales-pipeline ────────────────────────────────────────────
+router.get('/sales-pipeline', (req, res) => {
+  try {
+    const result = orchestrator.getPipeline();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/ai/research/cycle ───────────────────────────────────────────
+router.post('/research/cycle', (req, res) => {
+  try {
+    const result = orchestrator.runResearchCycle();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/ai/research/status ───────────────────────────────────────────
+router.get('/research/status', (req, res) => {
+  try {
+    const status = orchestrator.agents.research.getStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/ai/dashboard ─────────────────────────────────────────────────
+router.get('/dashboard', (req, res) => {
+  try {
+    const dashboard = orchestrator.getDashboard();
+    res.json(dashboard);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

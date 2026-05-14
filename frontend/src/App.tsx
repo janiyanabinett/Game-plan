@@ -1,13 +1,15 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
-import Modules from './pages/Modules';
-import ModuleDetail from './pages/ModuleDetail';
-import AIAdvisor from './pages/AIAdvisor';
-import BudgetPlanner from './pages/BudgetPlanner';
-import InvestmentSimulator from './pages/InvestmentSimulator';
-import DebtCalculator from './pages/DebtCalculator';
-import StudentLoanAnalyzer from './pages/StudentLoanAnalyzer';
+import LeadCenter from './pages/LeadCenter';
+import PropertySearch from './pages/PropertySearch';
+import MediaStudio from './pages/MediaStudio';
+import MarketingHub from './pages/MarketingHub';
+import SalesPipeline from './pages/SalesPipeline';
+import Communications from './pages/Communications';
+import LetterWriter from './pages/LetterWriter';
+import CRM from './pages/CRM';
+import AgentLab from './pages/AgentLab';
 
 export default function App() {
   return (
@@ -15,13 +17,15 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="modules" element={<Modules />} />
-          <Route path="modules/:id" element={<ModuleDetail />} />
-          <Route path="ai-advisor" element={<AIAdvisor />} />
-          <Route path="budget-planner" element={<BudgetPlanner />} />
-          <Route path="investment-simulator" element={<InvestmentSimulator />} />
-          <Route path="debt-calculator" element={<DebtCalculator />} />
-          <Route path="loan-analyzer" element={<StudentLoanAnalyzer />} />
+          <Route path="agent-lab" element={<AgentLab />} />
+          <Route path="leads" element={<LeadCenter />} />
+          <Route path="sales" element={<SalesPipeline />} />
+          <Route path="marketing" element={<MarketingHub />} />
+          <Route path="properties" element={<PropertySearch />} />
+          <Route path="media" element={<MediaStudio />} />
+          <Route path="comms" element={<Communications />} />
+          <Route path="letters" element={<LetterWriter />} />
+          <Route path="crm" element={<CRM />} />
         </Route>
       </Routes>
     </BrowserRouter>
